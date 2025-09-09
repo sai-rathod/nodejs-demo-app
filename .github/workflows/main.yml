@@ -1,0 +1,74 @@
+name: CICD for react app
+run-name: first cicd actual build
+on: 
+  push:
+    branches:
+      - main
+    paths:
+      - src/**
+  pull_request:
+    branches:
+      - main
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout the code
+        uses: actions/checkout@v3
+      - name: setup node version
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+      - name: install dependencies
+        run: npm ci 
+      - name: build the code
+        run: npm run build
+      - name: upload artifact file
+        uses: actions/upload-artifact@v3
+        with: 
+          name: react-build
+          path: build/
+  test:
+   needs: fetch
+   runs-on: ubuntu-latest
+   steps:
+      - name: checkout the code
+        uses: actions/checkout@v3
+      - name: setup node version
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+      - name: install dependencies
+        run: npm ci 
+      - name: testing the code
+        run: npm test -- --watchAll=false
+  pushtohub:
+    runs-on: ubuntu-latest
+    steps:
+    - name: login to docker hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERUSER }}
+        password: ${{ secrets.DOCKERPASS }}
+    - name: push to docker hub
+      run: |
+        docker build -t ${{ secrets.DOCKERUSER }}/new-app:latest
+        docker push ${{ secrets.DOCKERUSER }}/new-app:latest
+        
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: login to the ec2 instance
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.AWS_HOST }}
+        username: ${{ secrets.AWS_USERNAME }}
+        key: ${{ secrets.AWS_PEM_KEY }}
+        script: |
+          docker rm -f $(docker ps -aq) || true
+          docker image prune -f || true
+          docker run -d -p 3000:3000 ${{ secrets.DOCKERUSER }}/new-app:latest
+          echo "deploy successful"
+          
+
+  
