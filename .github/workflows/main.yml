@@ -38,6 +38,7 @@ jobs:
       - name: testing the code
         run: npm test -- --watchAll=false
   pushtohub:
+    needs: [fetch, test]
     runs-on: ubuntu-latest
     steps:
     - name: login to docker hub
@@ -52,6 +53,7 @@ jobs:
         
   deploy:
     runs-on: ubuntu-latest
+    needs: [fetch, test, pushtohub]
     steps:
     - name: login to the ec2 instance
       uses: appleboy/ssh-action@v1.0.0
