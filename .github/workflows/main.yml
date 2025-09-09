@@ -48,7 +48,7 @@ jobs:
         password: ${{ secrets.DOCKERPASS }}
     - name: push to docker hub
       run: |
-        docker build -t ${{ secrets.DOCKERUSER }}/new-app:latest
+        docker build -t ${{ secrets.DOCKERUSER }}/new-app:latest .
         docker push ${{ secrets.DOCKERUSER }}/new-app:latest
         
   deploy:
