@@ -73,8 +73,8 @@ jobs:
         key: ${{ secrets.AWS_PEM_KEY }}
         script: |
           docker rm -f $(docker ps -aq) || true
-          docker image prune -f || true
           docker pull ${{ secrets.DOCKERUSER }}/new-app:latest
+          docker image prune -f || true
           docker run -d -p 3000:3000 ${{ secrets.DOCKERUSER }}/new-app:latest
           echo "deploy successful"
     - name: download artifact
