@@ -13,15 +13,7 @@ jobs:
       - name: setup node version
         uses: actions/setup-node@v3
         with:
-          node-version: 20
-      - name: Cache node_modules
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm        # npm cache directory
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-            
+          node-version: 20        
       - name: install dependencies
         run: npm ci 
       - name: build the code
@@ -44,7 +36,7 @@ jobs:
       - name: install dependencies
         run: npm ci 
       - name: testing the code
-        run: npm test -- --watchAll=false
+        run: npm run test
   pushtohub:
     needs: [fetch, test]
     runs-on: ubuntu-latest
