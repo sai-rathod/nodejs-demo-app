@@ -7,7 +7,7 @@ function App() {
       <header className="App-header">
         <img src={logo} className="App-logo" alt="logo" />
         <p>
-          Edit <code>src/App.js</code> my first fully automated CICD new changes
+          Edit <code>src/App.js</code> my adding new line
         </p>
         <a
           className="App-link"
