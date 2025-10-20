@@ -1,70 +1,222 @@
-# Getting Started with Create React App
+# React Application with CI/CD Pipeline
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A React application with automated CI/CD pipeline using GitHub Actions, Docker, and AWS EC2 deployment.
 
-## Available Scripts
+## Overview
 
-In the project directory, you can run:
+This project is a standard React application created with `create-react-app`, featuring a complete CI/CD pipeline that automatically builds, tests, and deploys the application to AWS EC2 using Docker containers.
 
-### `npm start`
+## Features
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- **React Frontend**: Standard React application setup
+- **Automated CI/CD**: GitHub Actions workflow for continuous integration and deployment
+- **Containerization**: Docker-based deployment
+- **Cloud Hosting**: Deployed on AWS EC2 instance
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Prerequisites
 
-### `npm test`
+Before setting up this project, ensure you have:
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- Node.js and npm installed
+- Docker installed on your local machine and EC2 instance
+- AWS EC2 instance with appropriate configuration
+- GitHub repository
+- Docker Hub account
 
-### `npm run build`
+## AWS EC2 Setup
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Instance Configuration
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+1. **Launch an EC2 instance** with your preferred Linux distribution
+2. **Install Docker** on the instance:
+   ```bash
+   sudo apt-get update
+   sudo apt-get install docker.io -y
+   ```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+3. **Add user to Docker group** (replace `username` with your EC2 username):
+   ```bash
+   sudo usermod -aG docker username
+   ```
 
-### `npm run eject`
+4. **Configure Security Group** to allow inbound traffic on port 3000:
+   - Type: Custom TCP
+   - Port Range: 3000
+   - Source: 0.0.0.0/0 (or restrict to your IP)
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+5. **Generate or use existing PEM key** for SSH access
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## GitHub Secrets Configuration
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+Add the following secrets to your GitHub repository (Settings → Secrets and variables → Actions):
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+| Secret Name | Description |
+|------------|-------------|
+| `AWS_HOST` | Public IP or hostname of your EC2 instance |
+| `AWS_USERNAME` | Username for SSH access to EC2 (e.g., `ubuntu`, `ec2-user`) |
+| `AWS_PEM_KEY` | Contents of your PEM file for EC2 SSH access |
+| `DOCKERUSER` | Your Docker Hub username |
+| `DOCKERPASS` | Your Docker Hub password or access token |
 
-## Learn More
+**Note**: The secret names must match exactly as they are referenced in the workflow file.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Local Development
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### Installation
 
-### Code Splitting
+```bash
+# Clone the repository
+git clone <your-repository-url>
+cd <your-project-name>
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+# Install dependencies
+npm install
+```
 
-### Analyzing the Bundle Size
+### Running the Application
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+```bash
+# Start development server
+npm start
+```
 
-### Making a Progressive Web App
+The application will run on `http://localhost:3000`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### Building for Production
 
-### Advanced Configuration
+```bash
+# Create production build
+npm run build
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## CI/CD Pipeline
 
-### Deployment
+### Workflow Trigger
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+The CI/CD pipeline automatically triggers on:
+- Push to `main` branch
+- Pull requests to `main` branch (optional, based on your workflow configuration)
 
-### `npm run build` fails to minify
+### Pipeline Steps
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+1. **Build**: Compiles the React application
+2. **Test**: Runs test suite
+3. **Dockerize**: Creates Docker image with the built application
+4. **Push to Docker Hub**: Uploads the image to Docker Hub
+5. **Deploy to EC2**: 
+   - SSH into EC2 instance
+   - Pull latest Docker image
+   - Stop and remove old container
+   - Run new container on port 3000
+
+## Docker Configuration
+
+The application runs in a Docker container exposed on port 3000. Make sure your `Dockerfile` is properly configured in the project root.
+
+### Example Dockerfile
+
+```dockerfile
+FROM node:18-alpine as build
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=build /app/build /usr/share/nginx/html
+EXPOSE 3000
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+## Deployment
+
+### Automatic Deployment
+
+Simply push your changes to the `main` branch:
+
+```bash
+git add .
+git commit -m "Your commit message"
+git push origin main
+```
+
+The GitHub Actions workflow will automatically:
+- Build and test your application
+- Create a Docker image
+- Push to Docker Hub
+- Deploy to your EC2 instance
+
+### Manual Deployment
+
+If needed, you can manually deploy by SSH-ing into your EC2 instance:
+
+```bash
+# Pull the latest image
+docker pull <dockerhub-username>/<image-name>:latest
+
+# Stop and remove existing container
+docker stop <container-name>
+docker rm <container-name>
+
+# Run new container
+docker run -d -p 3000:3000 --name <container-name> <dockerhub-username>/<image-name>:latest
+```
+
+## Accessing the Application
+
+Once deployed, access your application at:
+```
+http://<your-ec2-public-ip>:3000
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Port 3000 not accessible**
+   - Check EC2 Security Group rules
+   - Verify Docker container is running: `docker ps`
+
+2. **Docker permission denied**
+   - Ensure user is in docker group: `sudo usermod -aG docker $USER`
+   - Log out and back in for changes to take effect
+
+3. **Pipeline fails on deployment**
+   - Verify all GitHub secrets are correctly set
+   - Check EC2 instance is running
+   - Verify SSH key has correct permissions
+
+4. **Container not starting**
+   - Check Docker logs: `docker logs <container-name>`
+   - Verify image was built correctly
+
+## Project Structure
+
+```
+.
+├── .github/
+│   └── workflows/
+│       └── main.yml          # GitHub Actions workflow
+├── public/                     # Public assets
+├── src/                        # React source code
+├── Dockerfile                  # Docker configuration
+├── package.json               # Project dependencies
+└── README.md                  # This file
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License.
+
+## Support
+
+For issues and questions, please open an issue in the GitHub repository.
