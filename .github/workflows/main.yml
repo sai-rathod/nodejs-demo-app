@@ -5,7 +5,7 @@ on:
     branches:
       - main
 jobs:
-  fetch:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: checkout the code
@@ -19,7 +19,7 @@ jobs:
       - name: build the code
         run: npm run build
   test:
-   needs: fetch
+   needs: build
    runs-on: ubuntu-latest
    steps:
       - name: checkout the code
@@ -33,7 +33,7 @@ jobs:
       - name: testing the code
         run: npm run test
   pushtohub:
-    needs: [fetch, test]
+    needs: [build, test]
     runs-on: ubuntu-latest
     steps:
     - name: checkout
@@ -50,7 +50,7 @@ jobs:
         
   deploy:
     runs-on: ubuntu-latest
-    needs: [fetch, test, pushtohub]
+    needs: [build, test, pushtohub]
     steps:
     - name: login to the ec2 instance
       uses: appleboy/ssh-action@v1.0.0
